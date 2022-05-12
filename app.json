@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "fake-store",
-    "slug": "fake-store",
+    "name": "cats",
+    "slug": "cats",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
