@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  Dimensions,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Dimensions, Platform, StyleSheet, Text, View } from "react-native";
 
 import useAxios from "./src/hooks/useAxios";
+import Animated, {
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  useSharedValue,
+  interpolate,
+  SharedValue,
+} from "react-native-reanimated";
 
 const { width } = Dimensions.get("window");
 
@@ -44,12 +44,16 @@ export default function App() {
     "https://api.unsplash.com/search/photos?query=cat&per_page=8",
     {
       headers: {
-        Authorization: "Client-ID pqn8wt_3w_rtYzZNbA7qeeEtNmDh1lssKlQMX7iUhYU",
+        Authorization: "Client-ID ",
       },
     }
   );
   const [data, setData] = useState<IData[]>([]);
-  const scrollX = useRef(new Animated.Value(0)).current;
+  const scrollX = useSharedValue(0);
+
+  const scrollHandler = useAnimatedScrollHandler(({ contentOffset }) => {
+    scrollX.value = contentOffset.x;
+  });
 
   useEffect(() => {
     if (!loading && responseData) {
@@ -75,78 +79,34 @@ export default function App() {
             return null;
           }
 
-          const inputRange = [
-            (index - 2) * ITEM_SIZE,
-            (index - 1) * ITEM_SIZE,
-            index * ITEM_SIZE,
-          ];
+          const animationData = {
+            index,
+            scrollX,
+          };
 
           return (
-            <Animated.Image
-              style={[
-                StyleSheet.absoluteFillObject,
-                {
-                  opacity: scrollX.interpolate({
-                    inputRange: inputRange,
-                    outputRange: [0, 1, 0],
-                  }),
-                },
-              ]}
-              source={{ uri: el.urls?.full }}
-              key={index}
-              blurRadius={12}
-            />
+            <AnimatedPoster animation={animationData} source={el.urls?.full} />
           );
         })}
         <Animated.FlatList
           data={data}
           keyExtractor={(_, index) => `${index}`}
           renderItem={({ item, index }) => {
-            const inputRange = [
-              (index - 2) * ITEM_SIZE,
-              (index - 1) * ITEM_SIZE,
-              index * ITEM_SIZE,
-            ];
+            const animationData = {
+              index,
+              scrollX,
+            };
 
             if (item.key) {
               return <View style={{ width: SPACER_ITEM_SIZE }} />;
             }
+
             return (
               <View style={{ width: ITEM_SIZE }}>
-                <Animated.View
-                  style={{
-                    padding: 0,
-                    marginHorizontal: 10,
-                    alignItems: "center",
-                    height: ITEM_SIZE * 1.2,
-                    justifyContent: "center",
-                    transform: [
-                      {
-                        translateY: scrollX.interpolate({
-                          inputRange,
-                          outputRange: [0, -50, -20],
-                        }),
-                      },
-                    ],
-                    opacity: scrollX.interpolate({
-                      inputRange,
-                      outputRange: [0.72, 1, 0.72],
-                    }),
-                  }}
-                >
-                  <Animated.Image
-                    source={{ uri: item.urls?.full }}
-                    style={[
-                      styles.productImage,
-                      {
-                        borderRadius: scrollX.interpolate({
-                          inputRange,
-                          outputRange: [8, 32, 8],
-                        }),
-                      },
-                    ]}
-                  />
-                </Animated.View>
+                <AnimatedCats
+                  animation={animationData}
+                  source={item.urls?.full}
+                />
               </View>
             );
           }}
@@ -160,13 +120,105 @@ export default function App() {
           contentContainerStyle={{
             alignItems: "center",
           }}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-            { useNativeDriver: false }
-          )}
+          onScroll={scrollHandler}
         />
       </View>
     </View>
+  );
+}
+
+interface IAnimatedCatsProps {
+  animation: {
+    scrollX: SharedValue<number>;
+    index: number;
+  };
+  source?: string;
+}
+
+function AnimatedCats({ animation, source }: IAnimatedCatsProps) {
+  const inputRange = [
+    (animation.index - 2) * ITEM_SIZE,
+    (animation.index - 1) * ITEM_SIZE,
+    animation.index * ITEM_SIZE,
+  ];
+
+  const rAnimatedContainer = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          translateY: interpolate(
+            animation.scrollX.value,
+            inputRange,
+            [0, -50, -20]
+          ),
+        },
+      ],
+      opacity: interpolate(
+        animation.scrollX.value,
+        inputRange,
+        [0.72, 1, 0.72]
+      ),
+    };
+  });
+
+  const rAnimatedImage = useAnimatedStyle(() => {
+    return {
+      borderRadius: interpolate(
+        animation.scrollX.value,
+        inputRange,
+        [8, 32, 8]
+      ),
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[
+        {
+          padding: 0,
+          marginHorizontal: 10,
+          alignItems: "center",
+          height: ITEM_SIZE * 1.2,
+          justifyContent: "center",
+        },
+        rAnimatedContainer,
+      ]}
+    >
+      <Animated.Image
+        source={{ uri: source }}
+        style={[styles.productImage, rAnimatedImage]}
+      />
+    </Animated.View>
+  );
+}
+
+interface IAnimatedPosterProps {
+  animation: {
+    scrollX: SharedValue<number>;
+    index: number;
+  };
+  source?: string;
+}
+
+function AnimatedPoster({ animation, source }: IAnimatedPosterProps) {
+  const inputRange = [
+    (animation.index - 2) * ITEM_SIZE,
+    (animation.index - 1) * ITEM_SIZE,
+    animation.index * ITEM_SIZE,
+  ];
+
+  const rAnimatedPoster = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(animation.scrollX.value, inputRange, [0, 1, 0]),
+    };
+  });
+  return (
+    <Animated.Image
+      style={[StyleSheet.absoluteFillObject, rAnimatedPoster]}
+      source={{ uri: source }}
+      key={animation.index}
+      blurRadius={12}
+    />
   );
 }
 

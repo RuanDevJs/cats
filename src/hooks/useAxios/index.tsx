@@ -46,10 +46,3 @@ export default function useAxios<T>(
     loading,
   };
 }
-
-// `https://api.unsplash.com/search/photos?query=cat&per_page=8`,
-//   {
-//     headers: {
-//       Authorization: "Client-ID pqn8wt_3w_rtYzZNbA7qeeEtNmDh1lssKlQMX7iUhYU",
-//     },
-//   };
