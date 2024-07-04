@@ -10,7 +10,10 @@
 
 <div align="center">
 
-https://github.com/RuanDevJs/cats/assets/82915279/7019c7d5-e05f-4e08-95e1-56ea109ed67f
+
+https://github.com/RuanDevJs/cats/assets/82915279/3f00ae40-a75c-4cdc-ac8d-5555cda8704d
+
+
 
 </div>
 
